@@ -10,6 +10,7 @@ def ConnectDatabase():
     uri = "mongodb+srv://taobin-project.cfwoi.mongodb.net/myFirstDatabase?authSource=%24external&authMechanism=MONGODB-X509&retryWrites=true&w=majority"
     client = MongoClient(uri,
                         tls=True,
+                        tlsAllowInvalidCertificates=True,
                         tlsCertificateKeyFile=CERT_LOCATION,
                         server_api=ServerApi('1'),
                         connect=False)
