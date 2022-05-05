@@ -48,7 +48,7 @@ Database 2022 Project
    </details>
 
 
-6. Create `.env` file in the same level as manage.py and write down:
+6. Create `.env` file in the top-level and write down:
 
    ```
    CERT_LOCATION='<PATH_TO_PEM_FILE>'
