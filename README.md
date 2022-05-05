@@ -6,7 +6,6 @@ Database 2022 Project
 |Name  | Recommended version(s)|   
 |------|-----------------------|
 |Python | 3.9 or higher |
-|Django | 3 or higher |
 
 ### Install Packages
 1. Clone this project repository to your machine.
