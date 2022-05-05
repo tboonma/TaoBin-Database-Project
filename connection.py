@@ -12,7 +12,6 @@ def ConnectDatabase():
                         tls=True,
                         tlsAllowInvalidCertificates=True,
                         tlsCertificateKeyFile=CERT_LOCATION,
-                        server_api=ServerApi('1'),
                         connect=False)
 
     db = client['taobin']
