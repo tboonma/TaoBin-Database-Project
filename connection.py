@@ -2,7 +2,6 @@
 Connect to database and retrieve cluster data
 """
 from pymongo import MongoClient
-from pymongo.server_api import ServerApi
 from decouple import config
 
 def ConnectDatabase():
