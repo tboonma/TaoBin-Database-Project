@@ -38,16 +38,6 @@ Database 2022 Project
     ```
     pip install -r requirements.txt
     ```
-   <details>
-    <summary>If you're using Windows</summary>
-    Run this command to install caching system.
-
-    ```
-    pip install --editable src\caching\.
-    ```
-   </details>
-
-
 6. Create `.env` file in the top-level and write down:
 
    ```
