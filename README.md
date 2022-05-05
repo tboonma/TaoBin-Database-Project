@@ -38,17 +38,7 @@ Database 2022 Project
     ```
     pip install -r requirements.txt
     ```
-   <details>
-    <summary>If you're using Windows</summary>
-    Run this command to install caching system.
-
-    ```
-    pip install --editable src\caching\.
-    ```
-   </details>
-
-
-6. Create `.env` file in the same level as manage.py and write down:
+6. Create `.env` file in the top-level and write down:
 
    ```
    CERT_LOCATION='<PATH_TO_PEM_FILE>'
