@@ -2,8 +2,8 @@ from unittest.mock import NonCallableMagicMock
 from connection import ConnectDatabase
 from datetime import datetime, timedelta
 from bson.objectid import ObjectId
-import pprint
 from math import floor
+from dateutil.relativedelta import relativedelta
 
 class TaoBinApp:
     def __init__(self) -> None:
@@ -21,12 +21,24 @@ class TaoBinApp:
     
     def search_location(self, keyword):
         # Search by name directly and category with case-insensitive query.
-        col = self.__db.get_collection("locations").find({"$or":[ {"Location Name": {'$regex': keyword, '$options': 'i'}}, {"City": {'$regex': keyword, '$options': 'i'}}]}, {"_id": 0, "Location Name": 1, "City": 1})
+        col = self.__db.get_collection("locations").find({"$or":[ {"Location Name": {'$regex': keyword, '$options': 'i'}}, {"City": {'$regex': keyword, '$options': 'i'}}]}, {"_id": 0, "Location Name": 1, "City": 1}).limit(20)
         for index, item in enumerate(col, 1):
             print(f"{index}. {item['Location Name']} - {item['City']}")
 
-    def calc_income(self, date: datetime):
+    def calc_income(self):
         """Calculate income for a specific date."""
+        first_month_query = self.__db.get_collection("transactions").find({}).sort("Timestamp").limit(1)
+        last_month_query = self.__db.get_collection("transactions").find({}).sort("Timestamp", -1).limit(1)
+        first_day = first_month_query[0]['Timestamp'].day
+        first_month = first_month_query[0]['Timestamp'].month
+        first_year = first_month_query[0]['Timestamp'].year
+        last_day = last_month_query[0]['Timestamp'].day
+        last_month = last_month_query[0]['Timestamp'].month
+        last_year = last_month_query[0]['Timestamp'].year
+        print(f"First month data: {first_day}/{first_month}/{first_year}")
+        print(f"Last month data: {last_day}/{last_month}/{last_year}")
+        input_date = input("Please specify date (dd/mm/yyyy): ").split('/')
+        date = datetime(int(input_date[2]), int(input_date[1]), int(input_date[0]))
         start_date = date
         end_date = date + timedelta(days=1)
         pipeline = [{
@@ -145,7 +157,7 @@ class TaoBinApp:
 
     def get_sweetness(self):
         """Get all sweetness levels."""
-        col = self.__db.get_collection("sweetness").find({})
+        col = self.__db.get_collection("sweetness").find({}).sort("Syrup percentage")
         searched_list = list(col)
         for index, i in enumerate(searched_list, 1):
             print(f"({index}) {i['Sweetness']}")
@@ -161,6 +173,29 @@ class TaoBinApp:
     def get_customer_by_phone(self, phone_number):
         col = self.__db.get_collection("customers").find_one({"Phone": phone_number})
         return col
+
+    def calc_net_worth(self):
+        maintainance_cost = 2000
+        first_month_query = self.__db.get_collection("transactions").find({}).sort("Timestamp").limit(1)
+        last_month_query = self.__db.get_collection("transactions").find({}).sort("Timestamp", -1).limit(1)
+        first_month = first_month_query[0]['Timestamp'].month
+        first_year = first_month_query[0]['Timestamp'].year
+        last_month = last_month_query[0]['Timestamp'].month
+        last_year = last_month_query[0]['Timestamp'].year
+        print(f"First month data: {first_month}/{first_year}")
+        print(f"Last month data: {last_month}/{last_year}")
+        month = input("Please input month and year in format mm/yyyy in A.D.: ").split('/')
+        start_duration = datetime(int(month[1]), int(month[0]), 1)
+        end_duration = start_duration + relativedelta(months=1) - timedelta(seconds=1)
+        pipeline = [{
+            "$match": {
+                "$and": [
+                    {"Timestamp": {'$lt': end_duration}},
+                    {"Timestamp": {'$gte': start_duration} }
+                ]}}, {"$group": {"_id": 0, "sum": {"$sum": "$Price"}}}]
+        total_income = self.__db.get_collection("transactions").aggregate(pipeline)
+        net_worth = list(total_income)[0]['sum'] - 2000
+        print(f"Net worth in {month[0]}/{month[1]} is {net_worth} baht.")
 
     def print_welcome(self):
         """Print welcome text."""
