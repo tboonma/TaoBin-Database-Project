@@ -5,30 +5,36 @@ from bson.objectid import ObjectId
 from math import floor
 from dateutil.relativedelta import relativedelta
 
+
 class TaoBinApp:
     def __init__(self) -> None:
         self.__db = ConnectDatabase()
 
     def search_menus(self, keyword):
         # Search by name directly and category with case-insensitive query
-        col = self.__db.get_collection("menus").find({"$or":[ {"Name": {'$regex': keyword, '$options': 'i'}}, {"Genre": {'$regex': keyword, '$options': 'i'}}]})
+        col = self.__db.get_collection("menus").find({"$or": [{"Name": {
+            '$regex': keyword, '$options': 'i'}}, {"Genre": {'$regex': keyword, '$options': 'i'}}]})
         searched_list = list(col)
         print(f"{'Name':^40}|{'Price':^10}")
         print(f"{'-'*51}")
         for index, item in enumerate(searched_list, 1):
-            print(f"{str(index)+'. '+item['Name']:<40}|{str(item['BasePrice'])+'.-':^10}")
+            print(
+                f"{str(index)+'. '+item['Name']:<40}|{str(item['BasePrice'])+'.-':^10}")
         return searched_list
-    
+
     def search_location(self, keyword):
         # Search by name directly and category with case-insensitive query.
-        col = self.__db.get_collection("locations").find({"$or":[ {"Location Name": {'$regex': keyword, '$options': 'i'}}, {"City": {'$regex': keyword, '$options': 'i'}}]}, {"_id": 0, "Location Name": 1, "City": 1}).limit(20)
+        col = self.__db.get_collection("locations").find({"$or": [{"Location Name": {'$regex': keyword, '$options': 'i'}}, {
+            "City": {'$regex': keyword, '$options': 'i'}}]}, {"_id": 0, "Location Name": 1, "City": 1}).limit(20)
         for index, item in enumerate(col, 1):
             print(f"{index}. {item['Location Name']} - {item['City']}")
 
     def calc_income(self):
         """Calculate income for a specific date."""
-        first_month_query = self.__db.get_collection("transactions").find({}).sort("Timestamp").limit(1)
-        last_month_query = self.__db.get_collection("transactions").find({}).sort("Timestamp", -1).limit(1)
+        first_month_query = self.__db.get_collection(
+            "transactions").find({}).sort("Timestamp").limit(1)
+        last_month_query = self.__db.get_collection(
+            "transactions").find({}).sort("Timestamp", -1).limit(1)
         first_day = first_month_query[0]['Timestamp'].day
         first_month = first_month_query[0]['Timestamp'].month
         first_year = first_month_query[0]['Timestamp'].year
@@ -38,34 +44,42 @@ class TaoBinApp:
         print(f"First month data: {first_day}/{first_month}/{first_year}")
         print(f"Last month data: {last_day}/{last_month}/{last_year}")
         input_date = input("Please specify date (dd/mm/yyyy): ").split('/')
-        date = datetime(int(input_date[2]), int(input_date[1]), int(input_date[0]))
+        date = datetime(int(input_date[2]), int(
+            input_date[1]), int(input_date[0]))
         start_date = date
         end_date = date + timedelta(days=1)
         pipeline = [{
             "$match": {
                 "$and": [
                     {"Timestamp": {'$lt': end_date}},
-                    {"Timestamp": {'$gte': start_date} }
+                    {"Timestamp": {'$gte': start_date}}
                 ]}}, {"$group": {"_id": 0, "sum": {"$sum": "$Price"}}}]
-        total_income = self.__db.get_collection("transactions").aggregate(pipeline)
-        print(f"Income for {date.day}/{date.month}/{date.year} is", list(total_income)[0]['sum'], 'baht')
+        total_income = self.__db.get_collection(
+            "transactions").aggregate(pipeline)
+        print(f"Income for {date.day}/{date.month}/{date.year} is",
+              list(total_income)[0]['sum'], 'baht')
         action = input("Do you want to see details (y/n)? ").lower()
         if action != 'y':
             return
-        col = self.__db.get_collection("transactions").find({"Timestamp": {'$lt': end_date, '$gte': start_date}})
+        col = self.__db.get_collection("transactions").find(
+            {"Timestamp": {'$lt': end_date, '$gte': start_date}})
         print(f"{'Name':^40}|{'Price':^10}")
         print(f"{'-'*51}")
         for index, item in enumerate(col, 1):
             # Get Menu Information from another collection
-            menu = self.__db.get_collection("menus").find_one({"_id": ObjectId(item['MenuID'])}, {"_id": 0, "Name": 1})
-            print(f"{str(index)+'. '+menu['Name']:<40}|{str(item['Price'])+'.-':^10}")
+            menu = self.__db.get_collection("menus").find_one(
+                {"_id": ObjectId(item['MenuID'])}, {"_id": 0, "Name": 1})
+            print(
+                f"{str(index)+'. '+menu['Name']:<40}|{str(item['Price'])+'.-':^10}")
 
     def create_transaction(self, menu_id, customer_id, location_id, sweetness_id, isSmoothie, getExtraEspresso, getStraw, getLid, payment_id):
         """Create a new order."""
         order_time = datetime.now()
         # Get price and additional information by menu id
-        menu = self.__db.get_collection("menus").find_one({"_id": ObjectId(menu_id)})
-        customer = self.__db.get_collection("customers").find_one({"_id": ObjectId(customer_id)})
+        menu = self.__db.get_collection(
+            "menus").find_one({"_id": ObjectId(menu_id)})
+        customer = self.__db.get_collection(
+            "customers").find_one({"_id": ObjectId(customer_id)})
         price = menu['BasePrice']
         print("Order Information...")
         print(f"Menu: {menu['Name']}")
@@ -90,16 +104,20 @@ class TaoBinApp:
                 "GetExtraEspresso": getExtraEspresso,
                 "GetStraw": getStraw,
                 "GetLid": getLid,
+                "Price": price,
+                "PaymentID": payment_id
             }])
             print("Order successfully created")
             if customer is not None:
                 current_points = customer['Points']
-                print(f"+{points} points for {customer['Firstname']} {customer['Lastname']}")
+                print(
+                    f"+{points} points for {customer['Firstname']} {customer['Lastname']}")
                 update_points = {"$set": {"Points": current_points+points}}
-                self.__db.get_collection("customers").update_one({"_id": ObjectId(customer_id)}, update_points)
-                customer = self.__db.get_collection("customers").find_one({"_id": ObjectId(customer_id)})
+                self.__db.get_collection("customers").update_one(
+                    {"_id": ObjectId(customer_id)}, update_points)
+                customer = self.__db.get_collection(
+                    "customers").find_one({"_id": ObjectId(customer_id)})
                 print(f"your current points: {customer['Points']}")
-
 
     def create_account(self, first_name=None, last_name=None, gender=None, birthday=None, phone=None):
         """Create new customer account"""
@@ -123,19 +141,23 @@ class TaoBinApp:
                 fill_info = True
                 gender_list = ["", "Male", "Female", "Other"]
                 while True:
-                    gender_id = int(input("Please select your gender...\n(1) Male\n(2) Female\n(3) Other\n: "))
+                    gender_id = int(
+                        input("Please select your gender...\n(1) Male\n(2) Female\n(3) Other\n: "))
                     if gender_id < len(gender_list) and gender_id > 0:
                         break
                     print("Incorrect input. Please try again...")
                 gender = gender_list[gender_id]
             if birthday == None:
                 fill_info = True
-                birthdate = input("Please input your birthday in format dd/mm/yyyy in A.D.: ")
+                birthdate = input(
+                    "Please input your birthday in format dd/mm/yyyy in A.D.: ")
                 birth = birthdate.split('/')
-                birthday = datetime(int(birth[2]), int(birth[1]), int(birth[0]))
+                birthday = datetime(
+                    int(birth[2]), int(birth[1]), int(birth[0]))
             if not fill_info:
                 break
-            print(f"Please check your information...\nName: {first_name} {last_name}\nGender: {gender}\nPhone: {phone}\nbirthday: {birth[0]}/{birth[1]}/{birth[2]}\n")
+            print(
+                f"Please check your information...\nName: {first_name} {last_name}\nGender: {gender}\nPhone: {phone}\nbirthday: {birth[0]}/{birth[1]}/{birth[2]}\n")
             confirm = input("Confirm (y/n)? ").lower()
             if confirm == 'y':
                 break
@@ -157,7 +179,8 @@ class TaoBinApp:
 
     def get_sweetness(self):
         """Get all sweetness levels."""
-        col = self.__db.get_collection("sweetness").find({}).sort("Syrup percentage")
+        col = self.__db.get_collection("sweetness").find(
+            {}).sort("Syrup percentage")
         searched_list = list(col)
         for index, i in enumerate(searched_list, 1):
             print(f"({index}) {i['Sweetness']}")
@@ -171,29 +194,35 @@ class TaoBinApp:
         return searched_list
 
     def get_customer_by_phone(self, phone_number):
-        col = self.__db.get_collection("customers").find_one({"Phone": phone_number})
+        col = self.__db.get_collection(
+            "customers").find_one({"Phone": phone_number})
         return col
 
     def calc_net_worth(self):
         maintainance_cost = 2000
-        first_month_query = self.__db.get_collection("transactions").find({}).sort("Timestamp").limit(1)
-        last_month_query = self.__db.get_collection("transactions").find({}).sort("Timestamp", -1).limit(1)
+        first_month_query = self.__db.get_collection(
+            "transactions").find({}).sort("Timestamp").limit(1)
+        last_month_query = self.__db.get_collection(
+            "transactions").find({}).sort("Timestamp", -1).limit(1)
         first_month = first_month_query[0]['Timestamp'].month
         first_year = first_month_query[0]['Timestamp'].year
         last_month = last_month_query[0]['Timestamp'].month
         last_year = last_month_query[0]['Timestamp'].year
         print(f"First month data: {first_month}/{first_year}")
         print(f"Last month data: {last_month}/{last_year}")
-        month = input("Please input month and year in format mm/yyyy in A.D.: ").split('/')
+        month = input(
+            "Please input month and year in format mm/yyyy in A.D.: ").split('/')
         start_duration = datetime(int(month[1]), int(month[0]), 1)
-        end_duration = start_duration + relativedelta(months=1) - timedelta(seconds=1)
+        end_duration = start_duration + \
+            relativedelta(months=1) - timedelta(seconds=1)
         pipeline = [{
             "$match": {
                 "$and": [
                     {"Timestamp": {'$lt': end_duration}},
-                    {"Timestamp": {'$gte': start_duration} }
+                    {"Timestamp": {'$gte': start_duration}}
                 ]}}, {"$group": {"_id": 0, "sum": {"$sum": "$Price"}}}]
-        total_income = self.__db.get_collection("transactions").aggregate(pipeline)
+        total_income = self.__db.get_collection(
+            "transactions").aggregate(pipeline)
         net_worth = list(total_income)[0]['sum'] - 2000
         print(f"Net worth in {month[0]}/{month[1]} is {net_worth} baht.")
 

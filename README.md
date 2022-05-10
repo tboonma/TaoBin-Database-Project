@@ -41,5 +41,5 @@ Database 2022 Project
 6. Create `.env` file in the top-level and write down:
 
    ```
-   CERT_LOCATION='<PATH_TO_PEM_FILE>'
+   CERT_LOCATION='teachers.pem'
    ```
